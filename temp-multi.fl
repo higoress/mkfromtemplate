@@ -1,14 +1,91 @@
 %{
-/* Declaracoes C diversas */
+
+    struct extrafiles{
+        int amount;
+    };
+    int countfiles = 1;
+    int LOOKUP = 0;
+    char OPTION[20];
+    char NAME[50];
+    char EMAIL[50];
+    char AUTHOR[50];
+    
 %}
 
-Abrev ER
-%%
-ER       { ; }
-{Abrev}  { AccaoSemantica em C; }
-%%
-int yywrap()
-{ return(1); }
+%s META
 
-int main()
-{ yylex(); return 0; }
+%%
+
+^===" "+[a-zA-Z%{}.]*        {sprintf(OPTION,"%s", yytext+4);
+                               // printf("%s\n", OPTION);
+                                BEGIN META;}
+<META>[ \t]+                     {}
+<META>e-?mail:           {LOOKUP = 1;}
+<META>author:            {LOOKUP = 2;}                         
+<META>[a-zA-z@.]+[ ]*[a-zA-z@.]+ {
+                    if(LOOKUP == 1){
+                        sprintf(EMAIL,"%s",yytext);
+                        LOOKUP = 0;
+                    }else if(LOOKUP == 2){
+                        sprintf(AUTHOR,"%s",yytext);
+                        LOOKUP = 0;
+                    }else{
+                        // printf("%s\n", yytext);
+                    }
+                    }
+"{%author%}"          {printf("%s\n", AUTHOR);}
+"{%email%}"          {printf("%s\n", EMAIL);}
+.|\n                        {}
+
+%%
+int yywrap(){ 
+    return(1); 
+}
+
+int validate(char * option){
+    
+    if(option == "meta"){
+        return 1;
+    }
+    else if(option == "tree"){
+        return 1;
+    }
+    else if(option == "Makefile"){
+        return 1;
+    }
+    else {
+        return 0;
+    }
+    
+}
+
+int main(int argc, char **argv){ 
+    
+    int i = 0;
+    FILE *file;
+
+    if(argc < 3){
+        printf("you should pass for the program a name and a template in this order\n");
+    }
+    else{
+        sprintf(NAME,"%s",argv[1]);
+        file = fopen(argv[2], "r");
+        if(!file){
+            fprintf(stderr,"could not open %s\n",argv[1]);
+            exit(1);
+        }
+        yyin = file;
+        printf("comecou\n");
+        yylex(); 
+    
+        printf("email:%s\n", EMAIL);
+        printf("author:%s\n", AUTHOR);
+        printf("opt:%s\n", OPTION);
+        printf("name:%s\n", NAME);
+        
+    }
+    
+    return 0;
+    /* [^=]*                 {   printf("estrutura\n");} */
+    
+}
