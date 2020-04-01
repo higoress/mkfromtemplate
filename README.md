@@ -3,6 +3,8 @@
 ## Template Multi-File
 
 
-#### Autor: Higor Emanuel Souza Silva
+#### Autores: 
+#### Higor Emanuel Souza Silva
+#### João Carlos Delgado Monteiro
 #### Contato: higoress@gmail.com
 
