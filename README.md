@@ -16,6 +16,8 @@ onde nome pode ser alterado por qualquer palavra ou string que você desejar.
 
 Pronto, agora basta editar o arquivo temp-multi.fl para adicionar ou alterar as regras que desejar e execute usando o passo 2.
 
+**Vale lembrar que esse passo a passo é para utilizar a opção de desenvolvedor, os passos para utilizar o programa será adicionado no futuro quando o trabalho estiver finalizado.**
+
 
 
 #### Autores: 
