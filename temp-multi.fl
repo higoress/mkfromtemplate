@@ -53,7 +53,7 @@
                     }else{
                         
                     }}
-"{%name%}"             {printf("%s", NAME);}
+"{%name%}"             {printf("%s\n", NAME);}
 "{%author%}"          {printf("%s\n", AUTHOR);}
 "{%email%}"          {printf("%s\n", EMAIL);}
 .|\n                        {}
