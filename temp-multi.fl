@@ -1,38 +1,59 @@
 %{
-
+    #include <string.h>
     struct extrafiles{
         int amount;
     };
     int countfiles = 1;
-    int LOOKUP = 0;
+    int LOOKUP = -1;
     char OPTION[20];
     char NAME[50];
     char EMAIL[50];
     char AUTHOR[50];
+    int opt = 0;
+    int validate(char*);
     
 %}
 
-%s META
+%s META TREE
 
 %%
 
-^===" "+[a-zA-Z%{}.]*        {sprintf(OPTION,"%s", yytext+4);
-                               // printf("%s\n", OPTION);
+^===" "*                    {   LOOKUP = 0;
                                 BEGIN META;}
 <META>[ \t]+                     {}
 <META>e-?mail:           {LOOKUP = 1;}
 <META>author:            {LOOKUP = 2;}                         
-<META>[a-zA-z@.]+[ ]*[a-zA-z@.]+ {
-                    if(LOOKUP == 1){
+<META>[a-zA-z@.{%}]+[ ]*[a-zA-z@.]* {
+                    if(LOOKUP == 0){
+                        sprintf(OPTION,"%s",yytext);
+                        opt = validate(OPTION);
+                        switch(opt){
+                            case 1:
+                                LOOKUP = -1;
+                                break;
+                            case 2:
+                                LOOKUP = -1;
+                                printf("tree mode...\n");
+                                //BEGIN TREE; 
+                                break;
+                            case 3:
+                                printf("file mode...\n");
+                                BEGIN INITIAL;
+                                break;
+                            default:
+                                printf("why you are here?\n");
+                                break;       }
+                    }else if(LOOKUP == 1){
                         sprintf(EMAIL,"%s",yytext);
-                        LOOKUP = 0;
+                        LOOKUP = -1;
                     }else if(LOOKUP == 2){
                         sprintf(AUTHOR,"%s",yytext);
-                        LOOKUP = 0;
+                        LOOKUP = -1;
+                        BEGIN INITIAL;
                     }else{
-                        // printf("%s\n", yytext);
-                    }
-                    }
+                        
+                    }}
+"{%name%}"             {printf("%s", NAME);}
 "{%author%}"          {printf("%s\n", AUTHOR);}
 "{%email%}"          {printf("%s\n", EMAIL);}
 .|\n                        {}
@@ -44,17 +65,12 @@ int yywrap(){
 
 int validate(char * option){
     
-    if(option == "meta"){
-        return 1;
-    }
-    else if(option == "tree"){
-        return 1;
-    }
-    else if(option == "Makefile"){
-        return 1;
-    }
-    else {
-        return 0;
+    if(!strncmp(option,"meta",strlen("meta"))){
+        return 1; // META MODE
+    }else if(!strncmp(option,"tree", strlen("tree"))){
+        return 2; // TREE MODE
+    }else {
+        return 3; // FILE MODE
     }
     
 }
