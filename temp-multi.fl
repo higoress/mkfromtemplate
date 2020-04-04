@@ -1,35 +1,41 @@
 %{
     #include <string.h>
     char nameEspecial[9] = "{%name%}\0";
+    char helper[2] = "/\0";
     struct file{
         char * name;
         char * path;
         struct file *next;
     };
-    struct file *fileList;
-    int countfiles = 1;
+    struct file *file_list = NULL;
     int LOOKUP = -1;
     char OPTION[20];
     char NAME[50];
     char EMAIL[50];
     char AUTHOR[50];
     int opt = 0;
-    int validate(char*);
     int oldlvl = 0;
     int newlvl = 0;
     char dirName[50];
     char pathName[100];
     char fileName[50];
-    char fileExtension[10];
+    FILE * aux;
+    char auxfile[150];
+    int validate(char*);
     int addFile(char*,char*);
-    char * findFile(char*);
-    
+    int findFile(char*);
+    int getFileName(char*);
+    void printFileList();
 %}
 
-%s META TREE
+%s META TREE FILEMODE
 
 %%
-^===" "*                    {   LOOKUP = 0;
+^===" "*                    {   
+                                if(LOOKUP == 3){
+                                    fclose(aux);
+                                }
+                                LOOKUP = 0;
                                 BEGIN META;}
 <META>[ \t]+                     {}
 <META>e-?mail:           {LOOKUP = 1;}
@@ -44,15 +50,22 @@
                                 break;
                             case 2:
                                 LOOKUP = -1;
-                                printf("tree mode...\n");
                                 BEGIN TREE; 
                                 break;
                             case 3:
-                                printf("file mode...\n");
-                                BEGIN INITIAL;
+                                getFileName(OPTION);
+                                findFile(fileName);
+                                strcpy(auxfile,pathName);
+                                strcat(auxfile,helper);
+                                strcat(auxfile,fileName);
+                                
+                                aux = fopen(auxfile, "w");
+                                yyout = aux;
+                                LOOKUP = 3;
+                                BEGIN FILEMODE;
                                 break;
                             default:
-                                printf("why you are here?\n");
+                                printf("why are you here?\n");
                                 break;       }
                     }else if(LOOKUP == 1){
                         sprintf(EMAIL,"%s",yytext);
@@ -73,10 +86,9 @@
                                 if(newlvl == 0){ // root option
                                     mkdir(dirName, 0777);
                                     if(chdir(dirName) != 0){
-                                        printf("did'nt chage\n");
+                                        printf("didn't chage\n");
                                     }
                                     getcwd(pathName,100);
-                                    //printf("path: %s\n", pathName);
                                 }else{
                                     while(!(newlvl == oldlvl+1)){
                                         chdir("..");
@@ -87,21 +99,29 @@
                                         printf("did'nt chage\n");
                                     }
                                     getcwd(pathName,100);
-                                    //printf("path: %s\n", pathName);
+                                    
                                 }
                                 oldlvl = newlvl;
                                 }
-<TREE>[a-zA-Z@{%}.]+     {   
+<TREE>[a-zA-Z@{%}.]+     {  
                             while(!(newlvl == oldlvl+1)){
                                 chdir("..");
                                 oldlvl--;
-                            }if(strncmp(yytext,nameEspecial, 8)){ //don't contain {%name%}
-                                strcpy(fileName,yytext);
-                                printf("%s\n", fileName);
+                            }if(getFileName(yytext)){
+                                printf("ERROR, COULD'N MATCH THE FILENAME\n");
                             }
+                            // add file to the structure and create the file.
+                            getcwd(pathName,100);
+                            if(!addFile(fileName,pathName)){
+                                printf("ERROR, FILE NOT ADDED TO THE STRUCTURE");
+                            }
+                            //aux = fopen(fileName, "w");
+                            //fclose(aux);
                         }
-
-
+<FILEMODE>"{%author%}"  {fprintf(yyout,"%s",AUTHOR);}
+<FILEMODE>"{%name%}"    {fprintf(yyout,"%s",NAME);}
+<FILEMODE>"{%email%}"   {fprintf(yyout,"%s",EMAIL);}
+<FILEMODE>.|\n          {ECHO;}
 .|\n                        {}
 
 %%
@@ -118,34 +138,51 @@ int validate(char * option){
     }else {
         return 3; // FILE MODE
     }
-    
 }
 
-
+int getFileName(char * text){
+    
+    if(strncmp(text,nameEspecial, 8)){ //don't contain {%name%}
+        strcpy(fileName,text);
+        return 0;
+    }else{ // files with {%name%}
+        strcpy(fileName,NAME);
+        strcat(fileName,text+8);
+        return 0;
+    }
+    return 1;
+}
 
 int addFile(char *name,char *path){
     struct file *newfile;
     
     newfile = (struct file *) malloc(sizeof(struct file));
-    newfile->next = fileList;
+    newfile->next = file_list;
     newfile->name = (char *) malloc(strlen(name)+1);
     strcpy(newfile->name,name);
     newfile->path = (char *) malloc(strlen(path)+1);
     strcpy(newfile->path,path);
-    fileList = newfile;
+    file_list = newfile;
 
     return 1;
 }
 
-char * findFile(char * fileName){
-    struct file *fp = fileList;
-    for(;fp;fp->next){
-        if(strcmp(fp->name, fileName)==0){
-            return fp->path;
+
+void printFileList(){
+    struct file *fp = file_list;
+    for(;fp;fp = fp->next){
+        printf("f:%s\n", fp->name);
         }
-        
+}
+int findFile(char * fileName){
+    struct file *fp = file_list;
+    for(;fp;fp = fp->next){
+        if(strcmp(fp->name, fileName)==0){
+            strcpy(pathName,fp->path);
+            return 0;
+        }
     }
-    return NULL;
+    return 1;
 }
 
 
@@ -166,17 +203,10 @@ int main(int argc, char **argv){
             exit(1);
         }
         yyin = file;
-        printf("comecou\n");
         yylex(); 
-    
-        printf("email:%s\n", EMAIL);
-        printf("author:%s\n", AUTHOR);
-        printf("opt:%s\n", OPTION);
-        printf("name:%s\n", NAME);
+        printf("DONE\n");
         
     }
     
     return 0;
-    /* [^=]*                 {   printf("estrutura\n");} */
-    
 }
