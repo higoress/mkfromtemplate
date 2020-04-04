@@ -1,5 +1,5 @@
 #!/bin/bash
 
 flex "$1"
-gcc lex.yy.c -lfl
-./a.out "$3" "$2"
+gcc lex.yy.c -lfl -o mkfromtemplate
+./mkfromtemplate "$3" "$2"
