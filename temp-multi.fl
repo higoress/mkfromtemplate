@@ -1,8 +1,12 @@
 %{
     #include <string.h>
-    struct extrafiles{
-        int amount;
+    char nameEspecial[9] = "{%name%}\0";
+    struct file{
+        char * name;
+        char * path;
+        struct file *next;
     };
+    struct file *fileList;
     int countfiles = 1;
     int LOOKUP = -1;
     char OPTION[20];
@@ -11,13 +15,20 @@
     char AUTHOR[50];
     int opt = 0;
     int validate(char*);
+    int oldlvl = 0;
+    int newlvl = 0;
+    char dirName[50];
+    char pathName[100];
+    char fileName[50];
+    char fileExtension[10];
+    int addFile(char*,char*);
+    char * findFile(char*);
     
 %}
 
 %s META TREE
 
 %%
-
 ^===" "*                    {   LOOKUP = 0;
                                 BEGIN META;}
 <META>[ \t]+                     {}
@@ -34,7 +45,7 @@
                             case 2:
                                 LOOKUP = -1;
                                 printf("tree mode...\n");
-                                //BEGIN TREE; 
+                                BEGIN TREE; 
                                 break;
                             case 3:
                                 printf("file mode...\n");
@@ -53,9 +64,44 @@
                     }else{
                         
                     }}
-"{%name%}"             {printf("%s\n", NAME);}
-"{%author%}"          {printf("%s\n", AUTHOR);}
-"{%email%}"          {printf("%s\n", EMAIL);}
+<TREE>[ \t]*        {}                    
+<TREE>[\-]*        {newlvl = yyleng;}
+<TREE>[a-zA-z@.{%}]+/\/      {  if(strcmp(nameEspecial,yytext)== 0){
+                                    strcpy(dirName,NAME);
+                                }else{
+                                    strcpy(dirName,yytext);}
+                                if(newlvl == 0){ // root option
+                                    mkdir(dirName, 0777);
+                                    if(chdir(dirName) != 0){
+                                        printf("did'nt chage\n");
+                                    }
+                                    getcwd(pathName,100);
+                                    //printf("path: %s\n", pathName);
+                                }else{
+                                    while(!(newlvl == oldlvl+1)){
+                                        chdir("..");
+                                        oldlvl--;
+                                    }
+                                    mkdir(dirName, 0777);
+                                    if(chdir(dirName) != 0){
+                                        printf("did'nt chage\n");
+                                    }
+                                    getcwd(pathName,100);
+                                    //printf("path: %s\n", pathName);
+                                }
+                                oldlvl = newlvl;
+                                }
+<TREE>[a-zA-Z@{%}.]+     {   
+                            while(!(newlvl == oldlvl+1)){
+                                chdir("..");
+                                oldlvl--;
+                            }if(strncmp(yytext,nameEspecial, 8)){ //don't contain {%name%}
+                                strcpy(fileName,yytext);
+                                printf("%s\n", fileName);
+                            }
+                        }
+
+
 .|\n                        {}
 
 %%
@@ -75,10 +121,39 @@ int validate(char * option){
     
 }
 
+
+
+int addFile(char *name,char *path){
+    struct file *newfile;
+    
+    newfile = (struct file *) malloc(sizeof(struct file));
+    newfile->next = fileList;
+    newfile->name = (char *) malloc(strlen(name)+1);
+    strcpy(newfile->name,name);
+    newfile->path = (char *) malloc(strlen(path)+1);
+    strcpy(newfile->path,path);
+    fileList = newfile;
+
+    return 1;
+}
+
+char * findFile(char * fileName){
+    struct file *fp = fileList;
+    for(;fp;fp->next){
+        if(strcmp(fp->name, fileName)==0){
+            return fp->path;
+        }
+        
+    }
+    return NULL;
+}
+
+
 int main(int argc, char **argv){ 
     
     int i = 0;
     FILE *file;
+    
 
     if(argc < 3){
         printf("you should pass for the program a name and a template in this order\n");
