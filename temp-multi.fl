@@ -115,8 +115,8 @@
                             if(!addFile(fileName,pathName)){
                                 printf("ERROR, FILE NOT ADDED TO THE STRUCTURE");
                             }
-                            //aux = fopen(fileName, "w");
-                            //fclose(aux);
+                            aux = fopen(fileName, "w");
+                            fclose(aux);
                         }
 <FILEMODE>"{%author%}"  {fprintf(yyout,"%s",AUTHOR);}
 <FILEMODE>"{%name%}"    {fprintf(yyout,"%s",NAME);}
